@@ -1,6 +1,6 @@
 # aw-web
 
-Interfaccia web locale per navigare e guardare anime con [AnimeWorld](https://www.animeworld.ac/) e [AnimeUnity](https://www.animeunity.so/).
+Interfaccia web locale per navigare e guardare anime con [AnimeWorld](https://www.animeworld.ac/) e [AnimeUnity](https://www.animeunity.so/) senza pubblicità o pop-up.
 
 
 <img width="1469" height="920" alt="Screenshot 2026-06-14 alle 22 56 11" src="https://github.com/user-attachments/assets/474f568f-36bf-417a-9e16-871e59b66fe2" />
