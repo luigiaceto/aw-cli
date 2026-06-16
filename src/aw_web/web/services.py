@@ -183,8 +183,15 @@ def anime_detail_url(provider_name: str, anime_ref: str) -> str:
 
 
 def save_watch_progress(provider_name: str, anime: Anime, episode: Anime.Episode) -> None:
-    if not DB.find_watch_item(provider_name, anime.ref):
-        cover = get_cover(anime.anilist_id, anime.name)
+    cover = get_cover(anime.anilist_id, anime.name)
+    DB.upsert_history_item(
+        provider=provider_name,
+        anime_data=anime.to_dict(),
+        cover_url=cover["cover_url"],
+        banner_url=cover["banner_url"],
+        current_episode=episode.num,
+    )
+    if DB.find_watch_item(provider_name, anime.ref):
         DB.upsert_watch_item(
             provider=provider_name,
             anime_data=anime.to_dict(),
@@ -192,4 +199,11 @@ def save_watch_progress(provider_name: str, anime: Anime, episode: Anime.Episode
             banner_url=cover["banner_url"],
             current_episode=episode.num,
         )
-    DB.update_current_episode(provider_name, anime.ref, episode.num)
+    if DB.find_favorite_item(provider_name, anime.ref):
+        DB.upsert_favorite_item(
+            provider=provider_name,
+            anime_data=anime.to_dict(),
+            cover_url=cover["cover_url"],
+            banner_url=cover["banner_url"],
+            current_episode=episode.num,
+        )

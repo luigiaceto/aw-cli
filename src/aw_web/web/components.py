@@ -103,6 +103,74 @@ def browser_play_form(provider_name: str, anime: Anime, episode_num: str, label:
     """
 
 
+def collection_toggle(
+    *,
+    action: str,
+    provider_name: str,
+    anime: Anime,
+    cover_url: str,
+    banner_url: str,
+    active: bool,
+    kind: str,
+    label: str,
+) -> str:
+    icon = _bookmark_icon(active) if kind == "watchlist" else _heart_icon(active)
+    return f"""
+    <form class="icon-toggle-form" action="{esc(action)}" method="post">
+      <input type="hidden" name="provider" value="{esc(provider_name)}">
+      <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
+      <input type="hidden" name="cover_url" value="{esc(cover_url)}">
+      <input type="hidden" name="banner_url" value="{esc(banner_url)}">
+      <button class="icon-toggle {'active' if active else ''}" type="submit" aria-label="{esc(label)}" title="{esc(label)}">
+        {icon}
+      </button>
+    </form>
+    """
+
+
+def _bookmark_icon(active: bool) -> str:
+    fill = "currentColor" if active else "none"
+    return f"""
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 4.75A2.75 2.75 0 0 1 8.75 2h6.5A2.75 2.75 0 0 1 18 4.75V21l-6-3.6L6 21V4.75Z" fill="{fill}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+    """
+
+
+def _heart_icon(active: bool) -> str:
+    fill = "currentColor" if active else "none"
+    return f"""
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" fill="{fill}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
+    """
+
+
+def favorite_card(item: dict[str, Any]) -> str:
+    anime_data = json.loads(str(item["anime_json"]))
+    anime = Anime.from_dict(anime_data)
+    cover_url = str(item.get("cover_url") or "")
+    href = (
+        f"/anime?provider={q(item['provider'])}&name={q(anime.name)}&ref={q(anime.ref)}"
+        f"&curr_ep={q(anime.curr_ep)}&last_ep={q(anime.last_ep)}&anilist_id={q(anime.anilist_id)}"
+    )
+    return f"""
+    <article class="card saved-card">
+      <a href="{href}">{image_html(cover_url, str(item['name']))}</a>
+      <div class="card-body">
+        <span class="badge">Preferito</span>
+        <h3><a href="{href}">{esc(item['name'])}</a></h3>
+        <div class="row-actions">
+          <form action="/favorites/remove" method="post">
+            <input type="hidden" name="id" value="{esc(item['id'])}">
+            <button class="secondary danger">Rimuovi</button>
+          </form>
+        </div>
+      </div>
+    </article>
+    """
+
+
 def watch_card(item: dict[str, Any], latest: list[Anime]) -> str:
     anime_data = json.loads(str(item["anime_json"]))
     anime = Anime.from_dict(anime_data)

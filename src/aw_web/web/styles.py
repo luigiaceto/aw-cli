@@ -14,6 +14,11 @@ input[type="search"] { flex: 1; min-width: 0; }
 button, .button { cursor: pointer; background: var(--accent); color: #081008; font-weight: 800; border-color: transparent; }
 button.secondary, .button.secondary { background: var(--panel-2); color: var(--text); border-color: var(--line); }
 button.danger { color: #fff; background: color-mix(in srgb, var(--danger) 78%, #171b24); }
+.icon-toggle-form { display: inline-flex; }
+.icon-toggle { display: inline-grid; place-items: center; width: 46px; height: 46px; padding: 0; border-radius: 999px; color: #fff; background: rgba(20, 24, 35, .38); border: 1px solid rgba(255,255,255,.54); }
+.icon-toggle:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.82); }
+.icon-toggle.active { background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.72); }
+.icon-toggle svg { width: 24px; height: 24px; display: block; }
 .hero { margin: 24px 0; padding: 24px 28px; border: 1px solid var(--line); border-radius: 24px; background: linear-gradient(135deg, rgba(143, 209, 79, .18), rgba(29, 35, 48, .85)); }
 .hero h1 { max-width: 760px; margin: 0 0 8px; font-size: clamp(1.65rem, 4.5vw, 3.25rem); line-height: 1; letter-spacing: -.06em; }
 .hero p { color: var(--muted); max-width: 680px; }

@@ -7,7 +7,7 @@ from urllib.parse import unquote
 
 from aw_web import providers
 from aw_web.anime import Anime
-from aw_web.web.components import card, episode_row, image_html, page, token_play_form, watch_card
+from aw_web.web.components import card, collection_toggle, episode_row, favorite_card, image_html, page, watch_card
 from aw_web.web.services import DB, default_provider_name, get_cover, get_provider, resolve_episode_url, set_current_provider, stream_context
 from aw_web.web.utils import anime_to_json, esc, provider_error, q
 
@@ -31,6 +31,11 @@ def render_home() -> bytes:
     if not watch_html:
         watch_html = '<p class="muted">La watchlist e vuota. Cerca un anime e aggiungilo.</p>'
 
+    favorite_items = DB.favorites()
+    favorites_html = "".join(favorite_card(item) for item in favorite_items)
+    if not favorites_html:
+        favorites_html = '<p class="muted">Nessun preferito salvato.</p>'
+
     body = f"""
     <section class="hero">
       <div>
@@ -42,6 +47,10 @@ def render_home() -> bytes:
     <section>
       <div class="section-title"><h2>La tua watchlist</h2></div>
       <div class="grid">{watch_html}</div>
+    </section>
+    <section>
+      <div class="section-title"><h2>Preferiti</h2></div>
+      <div class="grid">{favorites_html}</div>
     </section>
     <section>
       <div class="section-title"><h2>Ultimi episodi</h2><span>{esc(provider_name)}</span></div>
@@ -84,9 +93,10 @@ def render_anime(params: dict[str, list[str]]) -> bytes:
 
     saved = params.get("saved", [""])[0] == "1"
     if saved:
-        item = DB.find_watch_item(provider_name, unquote(params.get("ref", [""])[0]))
+        ref = unquote(params.get("ref", [""])[0])
+        item = DB.find_watch_item(provider_name, ref) or DB.find_favorite_item(provider_name, ref) or DB.find_history_item(provider_name, ref)
         if not item:
-            return page("Non trovato", '<p class="error">Anime non trovato in watchlist.</p>')
+            return page("Non trovato", '<p class="error">Anime non trovato.</p>')
         anime = Anime.from_dict(json.loads(str(item["anime_json"])))
     else:
         anime = Anime(
@@ -113,8 +123,10 @@ def render_anime(params: dict[str, list[str]]) -> bytes:
         episodes_error = provider_error(exc)
 
     cover = get_cover(anime.anilist_id, anime.name)
-    item = DB.find_watch_item(provider_name, anime.ref)
-    current_episode = str(item["current_episode"]) if item else "0"
+    watch_item = DB.find_watch_item(provider_name, anime.ref)
+    favorite_item = DB.find_favorite_item(provider_name, anime.ref)
+    history_item = DB.find_history_item(provider_name, anime.ref)
+    current_episode = str((history_item or watch_item or {}).get("current_episode") or "0")
     info_rows = "".join(
         f"<dt>{esc(key)}</dt><dd>{esc(value)}</dd>"
         for key, value in anime.info.items()
@@ -140,14 +152,8 @@ def render_anime(params: dict[str, list[str]]) -> bytes:
         <h1>{esc(anime.name)}</h1>
         <p class="muted">Stato: {esc(anime.status.value)} &middot; Ultimo visto: {esc(current_episode)} &middot; Totale: {esc(anime.last_ep)}</p>
         <div class="row-actions">
-          <form action="/watchlist/add" method="post">
-            <input type="hidden" name="provider" value="{esc(provider_name)}">
-            <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
-            <input type="hidden" name="cover_url" value="{esc(cover['cover_url'])}">
-            <input type="hidden" name="banner_url" value="{esc(cover['banner_url'])}">
-            <button>{'Aggiorna watchlist' if item else 'Aggiungi alla watchlist'}</button>
-          </form>
-          <a class="button secondary" href="/">Home</a>
+          {collection_toggle(action="/watchlist/toggle", provider_name=provider_name, anime=anime, cover_url=cover['cover_url'], banner_url=cover['banner_url'], active=bool(watch_item), kind="watchlist", label="Rimuovi dalla watchlist" if watch_item else "Aggiungi alla watchlist")}
+          {collection_toggle(action="/favorites/toggle", provider_name=provider_name, anime=anime, cover_url=cover['cover_url'], banner_url=cover['banner_url'], active=bool(favorite_item), kind="favorite", label="Rimuovi dai preferiti" if favorite_item else "Aggiungi ai preferiti")}
         </div>
         {f'<p class="plot">{esc(plot)}</p>' if plot else ''}
         <dl class="info-list">{info_rows}</dl>
@@ -170,7 +176,10 @@ def render_watch(params: dict[str, list[str]]) -> bytes:
 
     progress = DB.get_episode_progress(provider_name, anime.ref, episode.num) or {}
     resume_at = int(progress.get("progress_seconds") or 0)
-    back_url = f"/anime?saved=1&provider={q(provider_name)}&ref={q(anime.ref)}"
+    back_url = (
+        f"/anime?provider={q(provider_name)}&name={q(anime.name)}&ref={q(anime.ref)}"
+        f"&curr_ep={q(anime.curr_ep)}&last_ep={q(anime.last_ep)}&anilist_id={q(anime.anilist_id)}"
+    )
     direct_url = ""
     direct_error = ""
     try:
