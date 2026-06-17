@@ -24,7 +24,6 @@ Interfaccia web locale per navigare e guardare anime senza pubblicità o pop-up.
 Sono richiesti:
 
 - [uv](https://github.com/astral-sh/uv)
-- Python 3.10+
 - MPV o VLC, come video player fallback esterno
 
 Su macOS puoi installare `uv` e `mpv` tramite `brew` con:
@@ -44,10 +43,17 @@ brew install uv vlc
 Puoi installare `aw-web` direttamente da questa repository GitHub tramite `uv`:
 
 ```bash
-uv tool install --force git+https://github.com/luigiaceto/aw-web.git
+uv python install 3.13
+uv tool install --managed-python --python 3.13 git+https://github.com/luigiaceto/aw-web.git
 ```
 
-Per aggiornare `aw-web` all'ultima versione della repository, ripetere il comando.
+il primo comando installa python 3.13 dentro `uv` in modo da non interferire con altre installazioni python di sistema, mentre il secondo comando installa la WebApp come tool globale in un ambiente isolato.
+
+Per aggiornare `aw-web` all'ultima versione della repository, eseguire il comando:
+
+```bash
+uv tool install --force --managed-python --python 3.13 git+https://github.com/luigiaceto/aw-web.git
+```
 
 ## Avvio
 
