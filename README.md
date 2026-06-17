@@ -26,7 +26,7 @@ Sono richiesti:
 - [uv](https://github.com/astral-sh/uv)
 - MPV o VLC, come video player fallback esterno
 
-Su macOS puoi installare `uv` e `mpv` tramite `brew` con:
+Su macOS puoi installare `uv` e `mpv` tramite [Homebrew](https://brew.sh/) con:
 
 ```bash
 brew install uv mpv
