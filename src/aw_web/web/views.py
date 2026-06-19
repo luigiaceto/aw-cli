@@ -36,7 +36,7 @@ from aw_web.web.services import (
     set_current_provider,
     stream_context,
 )
-from aw_web.web.utils import anime_to_json, esc, provider_error, q
+from aw_web.web.utils import anime_to_json, esc, parse_int, provider_error, q
 
 
 def redirect(location: str) -> bytes:
@@ -56,7 +56,7 @@ def render_home() -> bytes:
     watch_items = DB.watchlist()
     watch_html = "".join(watch_card(item, latest) for item in watch_items)
     if not watch_html:
-        watch_html = '<p class="muted">La watchlist e vuota. Cerca un anime e aggiungilo.</p>'
+        watch_html = '<p class="muted">La watchlist è vuota. Cerca un anime e aggiungilo.</p>'
 
     favorite_items = DB.favorites()
     favorites_html = "".join(favorite_card(item) for item in favorite_items)
@@ -164,7 +164,7 @@ def render_seasonal_open(params: dict[str, list[str]]) -> bytes:
     provider_name = default_provider_name()
     try:
         year = int(params.get("year", [str(default_year)])[0] or default_year)
-        anilist_id = int(params.get("anilist_id", ["0"])[0] or 0)
+        anilist_id = parse_int(params.get("anilist_id", ["0"])[0])
     except ValueError:
         return page("Stagionali", '<p class="error">Richiesta stagionale non valida.</p>')
     season = normalize_season(params.get("season", [default_season])[0])
@@ -217,7 +217,7 @@ def render_anime(params: dict[str, list[str]]) -> bytes:
             curr_ep=unquote(params.get("curr_ep", ["0"])[0]),
             last_ep=unquote(params.get("last_ep", ["0"])[0]),
         )
-        anilist_id = int(params.get("anilist_id", ["0"])[0] or 0)
+        anilist_id = parse_int(params.get("anilist_id", ["0"])[0])
         if anilist_id:
             anime.anilist_id = anilist_id
 
@@ -351,6 +351,42 @@ def render_watch(params: dict[str, list[str]]) -> bytes:
       let restored = false;
       let usingProxy = false;
       let pendingResumeAt = 0;
+      function isEditingText(event) {{
+        const target = event.target;
+        if (!target) return false;
+        const tagName = target.tagName;
+        return target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
+      }}
+      function fullscreenElement() {{
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+      }}
+      function requestVideoFullscreen() {{
+        if (video.requestFullscreen) {{
+          return video.requestFullscreen();
+        }}
+        if (video.webkitRequestFullscreen) {{
+          return video.webkitRequestFullscreen();
+        }}
+        if (video.webkitEnterFullscreen) {{
+          return video.webkitEnterFullscreen();
+        }}
+      }}
+      function exitFullscreen() {{
+        if (document.exitFullscreen) {{
+          return document.exitFullscreen();
+        }}
+        if (document.webkitExitFullscreen) {{
+          return document.webkitExitFullscreen();
+        }}
+      }}
+      document.addEventListener('keydown', (event) => {{
+        if (event.key.toLowerCase() !== 'f' || event.repeat || event.metaKey || event.ctrlKey || event.altKey || isEditingText(event)) {{
+          return;
+        }}
+        event.preventDefault();
+        const action = fullscreenElement() ? exitFullscreen() : requestVideoFullscreen();
+        if (action && action.catch) action.catch(() => {{}});
+      }});
       function setMode(kind, label) {{
         if (!mode) return;
         mode.className = 'mode-pill mode-' + kind;

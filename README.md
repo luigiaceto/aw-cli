@@ -44,6 +44,9 @@ Puoi installare `aw-web` direttamente da questa repository GitHub tramite `uv`:
 
 ```bash
 uv python install 3.13
+```
+
+```bash
 uv tool install --managed-python --python 3.13 git+https://github.com/luigiaceto/aw-web.git
 ```
 
@@ -53,6 +56,9 @@ Dopo l'installazione potrebbe essere necessario aggiornare la shell per permette
 
 ```bash
 uv tool update-shell
+```
+
+```bash
 exec zsh
 ```
 

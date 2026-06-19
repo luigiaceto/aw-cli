@@ -121,23 +121,17 @@ class Animeunity(Provider):
         response = self.Client.get(search_url)
         response.raise_for_status()
         data = response.json()
-        match data['status']:
-            case "In Corso":
-                anime.status = AnimeStatus.ONGOING
-            case "Terminato":
-                anime.status = AnimeStatus.FINISHED
-            case "Non Rilasciato":
-                anime.status = AnimeStatus.NOT_RELEASED
-            case _:
-                anime.status = AnimeStatus.UNKNOWN
-        anime.last_ep = str(data['episodes_count'])
-        anime.info["Genere"] = ', '.join(data['genres'])
+
+        _, last_ep, anilist_id, status, info = self._parse_info(data)
+        anime.last_ep = last_ep
+        anime.set_info(anilist_id, status, info)
         # anime.info["Correlati"] = data['related']
 
     def _parse_info(self, data: dict) -> tuple[str, str, int, AnimeStatus, dict[str, str]]:
         title = data['title_eng'] or data['title'] or data['title_it']
-        last_ep = str(data['real_episodes_count']) if 'real_episodes_count' in data else "0"
-        anilist_id = data['anilist_id']
+        episodes_count = data.get('real_episodes_count') or data.get('episodes_count') or 0
+        last_ep = str(episodes_count)
+        anilist_id = int(data.get('anilist_id') or 0)
         match data['status']:
             case "In Corso":
                 status = AnimeStatus.ONGOING
@@ -148,15 +142,16 @@ class Animeunity(Provider):
             case _:
                 status = AnimeStatus.UNKNOWN
         info = {
-            "Categoria": data['type'],
-            "Audio": "Italiano" if data['dub'] else "??",
-            "Data di Uscita": data['date'],
-            "Stagione": data['season'],
-            "Studio": data['studio'],
-            "Voto": data['score'],
-            "Durata": f"{data['episodes_length']} min", # potrebbe non essere in minuti"
-            "Episodi": str(data['episodes_count']) if data['episodes_count'] != 0 else "??",
-            "Visualizzazioni": data['visite'],
-            "Trama": data['plot'],
+            "Categoria": data.get('type', ""),
+            "Audio": "Italiano" if data.get('dub') else "??",
+            "Data di Uscita": data.get('date', ""),
+            "Stagione": data.get('season', ""),
+            "Studio": data.get('studio', ""),
+            "Genere": ', '.join(data.get('genres') or []),
+            "Voto": data.get('score', ""),
+            "Durata": f"{data['episodes_length']} min" if data.get('episodes_length') else "",
+            "Episodi": str(data.get('episodes_count')) if data.get('episodes_count') else "??",
+            "Visualizzazioni": data.get('visite', ""),
+            "Trama": data.get('plot', ""),
         }
         return title, last_ep, anilist_id, status, info

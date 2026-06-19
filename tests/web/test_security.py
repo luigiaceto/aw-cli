@@ -8,6 +8,7 @@ from aw_web.providers.animeworld import Animeworld
 from aw_web.web.server import ALLOWED_ORIGINS, WebHandler
 from aw_web.web.services import STREAM_TTL_SECONDS, stream_context, stream_token, validate_media_url
 from aw_web.web.state import CSRF_TOKEN, STREAMS
+from aw_web.web.views import render_anime
 
 
 def test_validate_media_url_allows_public_http_urls():
@@ -53,6 +54,29 @@ def test_animeworld_rejects_non_animeworld_refs_before_fetch():
         provider._get_html("http://127.0.0.1:8765/private")
 
     client.get.assert_not_called()
+
+
+def test_anime_page_treats_invalid_anilist_id_as_missing(monkeypatch):
+    provider = MagicMock()
+    provider.info_anime.return_value = None
+    provider.episodes.return_value = None
+
+    monkeypatch.setattr("aw_web.web.views.get_provider", lambda provider_name: provider)
+    monkeypatch.setattr(
+        "aw_web.web.views.get_cover",
+        lambda anilist_id, title: {"cover_url": "", "banner_url": "", "color": ""},
+    )
+
+    body = render_anime(
+        {
+            "provider": ["animeunity"],
+            "name": ["Example"],
+            "ref": ["123"],
+            "anilist_id": ["None"],
+        }
+    )
+
+    assert b"Example" in body
 
 
 def test_post_origin_check_allows_only_local_origins():

@@ -18,6 +18,13 @@ def q(value: object) -> str:
     return quote(str(value), safe="")
 
 
+def parse_int(value: object, default: int = 0) -> int:
+    try:
+        return int(value or default)
+    except (TypeError, ValueError):
+        return default
+
+
 def anime_to_json(anime: Anime) -> str:
     return json.dumps(anime.to_dict(), ensure_ascii=False)
 

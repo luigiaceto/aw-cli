@@ -114,7 +114,7 @@ class Anime:
 
         return self._episodes[self._num_to_index[ep_num]]
 
-    def set_info(self, anilist_id: int, status: AnimeStatus, info: dict[str, str]) -> None:
+    def set_info(self, anilist_id: int | str | None, status: AnimeStatus, info: dict[str, str]) -> None:
         """
         Imposta le informazioni dell'anime.
         Args:
@@ -122,7 +122,10 @@ class Anime:
             status (AnimeStatus): lo stato dell'anime.
             info (dict): dizionario delle informazioni dell'anime.
         """
-        self.anilist_id = anilist_id
+        try:
+            self.anilist_id = int(anilist_id or 0)
+        except (TypeError, ValueError):
+            self.anilist_id = 0
         self.info = info
         self.status = status
         self.dub = info.get("Audio", "").lower() == "italiano"

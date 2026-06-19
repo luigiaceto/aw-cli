@@ -3,7 +3,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from aw_web.providers.animeunity import Animeunity
-from aw_web.anime import Anime
+from aw_web.anime import Anime, AnimeStatus
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
@@ -104,3 +104,15 @@ class TestAnimeunity:
             assert anime.last_ep == "220"
             assert "Genere" in anime.info
             assert "Action" in anime.info["Genere"]
+            assert anime.anilist_id == 20
+            assert anime.status == AnimeStatus.FINISHED
+            assert anime.info["Categoria"] == "TV"
+            assert anime.info["Trama"] != ""
+
+    def test_animeunity_parse_info_normalizes_missing_anilist_id(self, au):
+        data = json.loads((FIXTURES_DIR / "au_info.json").read_text(encoding="utf-8"))
+        data["anilist_id"] = None
+
+        _, _, anilist_id, _, _ = au._parse_info(data)
+
+        assert anilist_id == 0
