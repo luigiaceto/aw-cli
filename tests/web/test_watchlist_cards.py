@@ -10,7 +10,7 @@ def test_watch_card_uses_latest_episode_for_display():
     latest_anime.update_episodes({"11": "new-episode"})
     item = {
         "id": 1,
-        "provider": "animeworld",
+        "provider": "animeunity",
         "name": saved_anime.name,
         "ref": saved_anime.ref,
         "current_episode": "10",

@@ -8,10 +8,10 @@ from .provider import Provider
 
 class Animeunity(Provider):
     """
-    Classe che gestisce il collegamento con Animeworld.
+    Classe che gestisce il collegamento con AnimeUnity.
 
     Attributes:
-        _url (str): l'url del sito di Animeworld.
+        _url (str): l'url del sito di AnimeUnity.
         _headers (dict): gli headers da utilizzare per le richieste HTTP.
         _cookies (dict): i cookies da utilizzare per le richieste HTTP.
         _visited (dict): le pagine già visitate.

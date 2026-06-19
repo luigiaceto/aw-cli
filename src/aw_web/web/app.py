@@ -8,8 +8,9 @@ import sys
 import webbrowser
 from http.server import ThreadingHTTPServer
 
+from aw_web.services.providers import ensure_config
 from aw_web.web.server import WebHandler
-from aw_web.web.services import DB, ensure_config
+from aw_web.web.state import DB
 from aw_web.web.state import HOST, PORT
 
 

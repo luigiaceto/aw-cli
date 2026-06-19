@@ -7,6 +7,18 @@ from urllib.parse import unquote
 
 from aw_web import providers
 from aw_web.anime import Anime
+from aw_web.services.anilist import (
+    adjacent_season,
+    current_season,
+    get_cover,
+    normalize_season,
+    seasonal_anime,
+    seasonal_by_id,
+    seasonal_label,
+)
+from aw_web.services.matching import best_seasonal_match, seasonal_open_url
+from aw_web.services.providers import default_provider_name, get_provider, set_current_provider
+from aw_web.services.streams import resolve_episode_url, stream_context
 from aw_web.web.components import (
     card,
     collection_toggle,
@@ -19,23 +31,7 @@ from aw_web.web.components import (
     seasonal_card,
     watch_card,
 )
-from aw_web.web.services import (
-    DB,
-    adjacent_season,
-    best_seasonal_match,
-    current_season,
-    default_provider_name,
-    get_cover,
-    get_provider,
-    normalize_season,
-    resolve_episode_url,
-    seasonal_anime,
-    seasonal_by_id,
-    seasonal_label,
-    seasonal_open_url,
-    set_current_provider,
-    stream_context,
-)
+from aw_web.web.state import DB
 from aw_web.web.utils import anime_to_json, esc, parse_int, provider_error, q
 
 
@@ -53,12 +49,18 @@ def render_home() -> bytes:
     except Exception as exc:
         latest_html = f'<p class="error">Impossibile caricare gli ultimi episodi: {esc(provider_error(exc))}</p>'
 
-    watch_items = DB.watchlist()
+    watch_items = [
+        item for item in DB.watchlist()
+        if str(item.get("provider") or "") in providers.PROVIDERS_AVAILABLE
+    ]
     watch_html = "".join(watch_card(item, latest) for item in watch_items)
     if not watch_html:
         watch_html = '<p class="muted">La watchlist è vuota. Cerca un anime e aggiungilo.</p>'
 
-    favorite_items = DB.favorites()
+    favorite_items = [
+        item for item in DB.favorites()
+        if str(item.get("provider") or "") in providers.PROVIDERS_AVAILABLE
+    ]
     favorites_html = "".join(favorite_card(item) for item in favorite_items)
     if not favorites_html:
         favorites_html = '<p class="muted">Nessun preferito salvato.</p>'
@@ -66,9 +68,9 @@ def render_home() -> bytes:
     body = f"""
     <section class="hero">
       <div>
-        <p class="eyebrow">Interfaccia web locale per aw-web</p>
-        <h1>Guarda anime con la comodità del browser ma senza pubblicità e pop-up.</h1>
-        <p>Apri dettagli, salva la tua watchlist e lancia gli episodi.</p>
+        <p class="eyebrow">Interfaccia web locale per aw-cli</p>
+        <h1>Guarda anime con la comodità del browser ma senza pop-up.</h1>
+        <p>Salva la tua watchlist, lancia gli episodi e guarda quali anime sono disponibili in ogni stagione.</p>
       </div>
     </section>
     <section>

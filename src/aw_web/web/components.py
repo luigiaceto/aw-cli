@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 from aw_web.anime import Anime
-from aw_web.web.services import default_provider_name, get_cover
+from aw_web.services.anilist import get_cover
 from aw_web.web.state import CSRF_TOKEN
 from aw_web.web.styles import CSS
 from aw_web.web.utils import anime_to_json, available_last_episode, esc, has_new_episode, q
@@ -17,13 +17,13 @@ def csrf_input() -> str:
 
 
 def page(title: str, body: str) -> bytes:
-    provider = default_provider_name()
     html_doc = f"""
     <!doctype html>
     <html lang="it">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
+      <link rel="icon" href="/favicon.ico?v=1" sizes="any">
       <title>{esc(title)} - aw-web</title>
       <style>{CSS}</style>
     </head>
@@ -35,10 +35,6 @@ def page(title: str, body: str) -> bytes:
         </nav>
         <form class="search" action="/search" method="get">
           <input type="search" name="q" placeholder="Cerca anime..." autocomplete="off" required>
-          <select name="provider" id="provider-select" onchange="fetch('/set-provider', {{method: 'POST', headers: {{'Content-Type': 'application/x-www-form-urlencoded'}}, body: new URLSearchParams({{name: this.value, csrf_token: '{esc(CSRF_TOKEN)}'}})}})">
-            <option value="animeunity" {'selected' if provider == 'animeunity' else ''}>AnimeUnity</option>
-            <option value="animeworld" {'selected' if provider == 'animeworld' else ''}>AnimeWorld</option>
-          </select>
           <button>Cerca</button>
         </form>
       </header>

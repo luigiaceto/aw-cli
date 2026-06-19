@@ -1,13 +1,14 @@
 from datetime import date
 
 from aw_web.anime import Anime
-from aw_web.web.services import (
+from aw_web.services.anilist import (
     SeasonalAnime,
     adjacent_season,
-    best_seasonal_match,
     current_season,
+    seasonal_anime,
     seasonal_label,
 )
+from aw_web.services.matching import best_seasonal_match
 
 
 def test_current_season_from_date():
@@ -24,6 +25,61 @@ def test_adjacent_season_crosses_year_boundaries():
 
 def test_seasonal_label_is_italian():
     assert seasonal_label("SPRING") == "Primavera"
+
+
+def test_seasonal_anime_fetches_all_anilist_pages(monkeypatch):
+    calls = []
+
+    class FakeResponse:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self.payload
+
+    def media_item(anilist_id, title, *, is_adult=False, genres=None):
+        return {
+            "id": anilist_id,
+            "title": {"english": title, "romaji": "", "native": ""},
+            "synonyms": [],
+            "coverImage": {},
+            "bannerImage": "",
+            "status": "RELEASING",
+            "episodes": 12,
+            "genres": genres or [],
+            "averageScore": 0,
+            "isAdult": is_adult,
+        }
+
+    def fake_post(url, *, json, timeout):
+        page = json["variables"]["page"]
+        calls.append(page)
+        return FakeResponse(
+            {
+                "data": {
+                    "Page": {
+                        "pageInfo": {"hasNextPage": page == 1},
+                        "media": [
+                            media_item(page, f"Anime {page}"),
+                            media_item(page + 10, f"Adult {page}", is_adult=True),
+                            media_item(page + 20, f"Hentai {page}", genres=["Hentai"]),
+                        ],
+                    }
+                }
+            }
+        )
+
+    seasonal_anime.cache_clear()
+    monkeypatch.setattr("aw_web.services.anilist.httpx.post", fake_post)
+
+    items = seasonal_anime(2026, "SPRING")
+
+    assert calls == [1, 2]
+    assert [item.anilist_id for item in items] == [1, 2]
+    seasonal_anime.cache_clear()
 
 
 def test_best_seasonal_match_uses_anilist_id(monkeypatch):
@@ -45,11 +101,45 @@ def test_best_seasonal_match_uses_anilist_id(monkeypatch):
     anime.anilist_id = 123
 
     monkeypatch.setattr(
-        "aw_web.web.services.find_seasonal_matches",
+        "aw_web.services.matching.find_seasonal_matches",
         lambda provider_name, seasonal: [anime],
     )
 
     match, candidates = best_seasonal_match("animeunity", seasonal)
 
+    assert match == anime
+    assert candidates == [anime]
+
+
+def test_seasonal_match_tries_numbered_title_variant(monkeypatch):
+    seasonal = SeasonalAnime(
+        anilist_id=182300,
+        title="Re:ZERO -Starting Life in Another World- Season 4",
+        title_romaji="",
+        title_english="",
+        title_native="",
+        synonyms=(),
+        cover_url="",
+        banner_url="",
+        status="RELEASING",
+        episodes=0,
+        genres=(),
+        average_score=0,
+    )
+    anime = Anime("Re:ZERO -Starting Life in Another World- 4", "provider-ref")
+    queries = []
+
+    class FakeProvider:
+        def search(self, title):
+            queries.append(title)
+            if title == "Re:ZERO -Starting Life in Another World- 4":
+                return [anime]
+            return []
+
+    monkeypatch.setattr("aw_web.services.matching.get_provider", lambda provider_name: FakeProvider())
+
+    match, candidates = best_seasonal_match("animeunity", seasonal)
+
+    assert "Re:ZERO -Starting Life in Another World- 4" in queries
     assert match == anime
     assert candidates == [anime]

@@ -3,7 +3,6 @@ from .provider import Provider, ProviderError
 
 PROVIDERS_AVAILABLE = {
     "animeunity": ("aw_web.providers.animeunity", "Animeunity"),
-    "animeworld": ("aw_web.providers.animeworld", "Animeworld"),
 }
 
 def create_provider(name: str) -> Provider:
@@ -12,7 +11,7 @@ def create_provider(name: str) -> Provider:
     Usa importazione lazy per caricare solo il modulo necessario.
 
     Args:
-        name (str): il nome del provider (es. 'animeunity', 'animeworld').
+        name (str): il nome del provider (es. 'animeunity').
 
     Returns:
         Provider: l'istanza del provider creato.

@@ -1,12 +1,12 @@
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import HTTPError
 
 from aw_web.anime import Anime
-from aw_web.providers.animeworld import Animeworld
-from aw_web.web.server import ALLOWED_ORIGINS, WebHandler
-from aw_web.web.services import STREAM_TTL_SECONDS, stream_context, stream_token, validate_media_url
+from aw_web.services.playback import validate_media_url
+from aw_web.services.streams import STREAM_TTL_SECONDS, stream_context, stream_token
+from aw_web.web.components import page
+from aw_web.web.server import ALLOWED_ORIGINS, WebHandler, favicon_bytes
 from aw_web.web.state import CSRF_TOKEN, STREAMS
 from aw_web.web.views import render_anime
 
@@ -38,22 +38,12 @@ def test_stream_tokens_expire(monkeypatch):
     anime = Anime("Example", "provider-ref")
     anime.update_episodes({"1": "episode-ref"})
 
-    monkeypatch.setattr("aw_web.web.services.time.time", lambda: 1000.0)
+    monkeypatch.setattr("aw_web.services.streams.time.time", lambda: 1000.0)
     token = stream_token("animeunity", anime, "1")
 
-    monkeypatch.setattr("aw_web.web.services.time.time", lambda: 1001.0 + STREAM_TTL_SECONDS)
+    monkeypatch.setattr("aw_web.services.streams.time.time", lambda: 1001.0 + STREAM_TTL_SECONDS)
     with pytest.raises(RuntimeError):
         stream_context(token)
-
-
-def test_animeworld_rejects_non_animeworld_refs_before_fetch():
-    client = MagicMock()
-    provider = Animeworld(client=client)
-
-    with pytest.raises(HTTPError):
-        provider._get_html("http://127.0.0.1:8765/private")
-
-    client.get.assert_not_called()
 
 
 def test_anime_page_treats_invalid_anilist_id_as_missing(monkeypatch):
@@ -77,6 +67,14 @@ def test_anime_page_treats_invalid_anilist_id_as_missing(monkeypatch):
     )
 
     assert b"Example" in body
+
+
+def test_page_includes_favicon_link():
+    assert b'<link rel="icon" href="/favicon.ico?v=1" sizes="any">' in page("Test", "")
+
+
+def test_favicon_is_packaged():
+    assert favicon_bytes()
 
 
 def test_post_origin_check_allows_only_local_origins():

@@ -3,7 +3,8 @@
 CSS = """
 :root { color-scheme: dark; --bg: #0b0d12; --panel: #141823; --panel-2: #1d2330; --text: #edf2ff; --muted: #a8b3c7; --accent: #8fd14f; --danger: #ff6b6b; --line: #2a3242; }
 * { box-sizing: border-box; }
-body { margin: 0; background: radial-gradient(circle at top left, #25314a 0, #0b0d12 34rem); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+html { min-height: 100%; background: var(--bg); }
+body { min-height: 100vh; margin: 0; background: radial-gradient(circle at top left, #25314a 0, #0b0d12 34rem) fixed no-repeat; background-color: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 a { color: inherit; text-decoration: none; }
 main { width: min(1180px, calc(100% - 32px)); margin: 0 auto 64px; }
 .topbar { position: sticky; top: 0; z-index: 5; display: flex; gap: 18px; align-items: center; justify-content: space-between; padding: 16px max(16px, calc((100vw - 1180px) / 2)); background: rgba(11, 13, 18, .82); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }

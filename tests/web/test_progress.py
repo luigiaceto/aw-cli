@@ -15,11 +15,11 @@ def test_browser_watch_start_saves_progress(monkeypatch):
 
     response = handle_watch_start(
         {
-            "provider": ["animeworld"],
+            "provider": ["animeunity"],
             "anime": [anime_to_json(anime)],
             "episode": ["11"],
         }
     )
 
     assert response.startswith(b"REDIRECT:/watch?token=")
-    assert saved == [("animeworld", "test-ref", "11")]
+    assert saved == [("animeunity", "test-ref", "11")]

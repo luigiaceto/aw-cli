@@ -3,25 +3,18 @@
 from __future__ import annotations
 
 import sys
+from importlib.resources import files
 from http.server import BaseHTTPRequestHandler
 from secrets import compare_digest
 from urllib.parse import parse_qs, urlparse
 
 from aw_web.anime import Anime
+from aw_web.services.playback import open_external_player
+from aw_web.services.progress import save_watch_progress
+from aw_web.services.providers import get_provider, set_current_provider
+from aw_web.services.streams import resolve_episode_url, stream_context, stream_token
 from aw_web.web.components import page
-from aw_web.web.services import (
-    DB,
-    STREAMS,
-    get_cover,
-    get_provider,
-    open_external_player,
-    resolve_episode_url,
-    save_watch_progress,
-    set_current_provider,
-    stream_context,
-    stream_token,
-)
-from aw_web.web.state import CSRF_TOKEN, HOST, PORT
+from aw_web.web.state import CSRF_TOKEN, DB, HOST, PORT, STREAMS
 from aw_web.web.utils import anime_from_json, esc, q
 from aw_web.web.views import (
     redirect,
@@ -36,6 +29,10 @@ from aw_web.web.views import (
 
 MAX_POST_BYTES = 1024 * 1024
 ALLOWED_ORIGINS = {f"http://{HOST}:{PORT}", f"http://localhost:{PORT}"}
+
+
+def favicon_bytes() -> bytes:
+    return files("aw_web.web").joinpath("static/favicon.ico").read_bytes()
 
 
 def handle_add_watchlist(fields: dict[str, list[str]]) -> bytes:
@@ -147,6 +144,13 @@ def handle_watch_start(fields: dict[str, list[str]]) -> bytes:
 
 
 class WebHandler(BaseHTTPRequestHandler):
+    def do_HEAD(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path == "/favicon.ico":
+            self.respond_favicon(head_only=True)
+        else:
+            self.send_error(405)
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
@@ -164,6 +168,8 @@ class WebHandler(BaseHTTPRequestHandler):
             self.respond(render_watch(params))
         elif parsed.path == "/stream":
             self.stream_video(params)
+        elif parsed.path == "/favicon.ico":
+            self.respond_favicon()
         elif parsed.path == "/set-provider":
             self.send_error(405)
         else:
@@ -282,6 +288,20 @@ class WebHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def respond_favicon(self, *, head_only: bool = False) -> None:
+        try:
+            body = favicon_bytes()
+        except FileNotFoundError:
+            self.send_error(404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "image/x-icon")
+        self.send_header("Cache-Control", "public, max-age=86400")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        if not head_only:
+            self.wfile.write(body)
 
     def log_message(self, format: str, *args: object) -> None:
         sys.stderr.write("aw-web: " + format % args + "\n")

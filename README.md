@@ -115,9 +115,7 @@ In questa pagina puoi:
 - scegliere anno e stagione;
 - usare le frecce per andare alla stagione precedente o successiva;
 - vedere copertina, generi, numero di episodi e `Voto AniList`;
-- cliccare un anime per cercarlo nel provider attivo e aprirlo nella normale pagina dettaglio di `aw-web`.
-
-Il provider usato è quello selezionato nella barra in alto, accanto alla ricerca.
+- cliccare un anime per cercarlo su AnimeUnity e aprirlo nella normale pagina dettaglio di `aw-web`.
 
 ## Watchlist, Preferiti e Database
 
