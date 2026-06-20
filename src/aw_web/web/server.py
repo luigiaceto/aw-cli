@@ -29,10 +29,30 @@ from aw_web.web.views import (
 
 MAX_POST_BYTES = 1024 * 1024
 ALLOWED_ORIGINS = {f"http://{HOST}:{PORT}", f"http://localhost:{PORT}"}
+REFRESH_STREAM_STATUSES = {403, 404, 410, 416}
+MEDIA_CONTENT_TYPES = {
+    "application/mp4",
+    "application/octet-stream",
+    "application/vnd.apple.mpegurl",
+    "application/x-mpegurl",
+    "binary/octet-stream",
+}
 
 
 def favicon_bytes() -> bytes:
     return files("aw_web.web").joinpath("static/favicon.ico").read_bytes()
+
+
+def should_refresh_stream_url(status_code: int, content_type: str | None) -> bool:
+    if status_code in REFRESH_STREAM_STATUSES:
+        return True
+    if not 200 <= status_code < 300:
+        return False
+    if not content_type:
+        return False
+
+    media_type = content_type.split(";", 1)[0].strip().lower()
+    return not (media_type.startswith("video/") or media_type in MEDIA_CONTENT_TYPES)
 
 
 def handle_add_watchlist(fields: dict[str, list[str]]) -> bytes:
@@ -243,9 +263,15 @@ class WebHandler(BaseHTTPRequestHandler):
             for attempt in range(2):
                 url, _ = resolve_episode_url(token)
                 with provider.Client.stream("GET", url, headers=headers) as response:
-                    if attempt == 0 and response.status_code in {403, 404, 410, 416}:
+                    content_type = response.headers.get("content-type")
+                    if attempt == 0 and should_refresh_stream_url(response.status_code, content_type):
                         data["url"] = ""
                         continue
+                    if should_refresh_stream_url(response.status_code, content_type):
+                        raise RuntimeError(
+                            "Il provider non ha restituito un video valido "
+                            f"(HTTP {response.status_code}, Content-Type: {content_type or 'assente'})."
+                        )
 
                     self.send_response(response.status_code)
                     for name in (
