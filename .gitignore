@@ -46,6 +46,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.uv-cache/
 cover/
 
 # pyenv:
@@ -92,6 +93,8 @@ aw-cronologia.csv
 *.sqlite3
 *.db
 TODO.md
+macos/build/
+.DS_Store
 
 # Fixtures for tests
 tests/fixtures/

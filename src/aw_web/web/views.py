@@ -332,11 +332,6 @@ def render_watch(params: dict[str, list[str]]) -> bytes:
       </div>
       <div class="row-actions">
         <a class="button" href="{back_url}">Torna agli episodi</a>
-        <form action="/play-token" method="post">
-          {csrf_input()}
-          <input type="hidden" name="token" value="{esc(token)}">
-          <button class="secondary">Apri in MPV/VLC</button>
-        </form>
         <div class="nav-group">
           {prev_html}
           {next_html}
@@ -421,7 +416,7 @@ def render_watch(params: dict[str, list[str]]) -> bytes:
       video.addEventListener('error', () => {{
         if (usingProxy) {{
           setMode('error', 'Errore video');
-          if (status) status.textContent = 'Errore durante la riproduzione anche con proxy locale. Prova MPV/VLC.';
+          if (status) status.textContent = 'Errore durante la riproduzione anche con proxy locale.';
           return;
         }}
         useProxy();

@@ -27,10 +27,11 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, _sigterm)
 
-    try:
-        webbrowser.open(url)
-    except Exception:
-        pass
+    if os.environ.get("AW_WEB_NO_BROWSER") != "1":
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
 
     try:
         server.serve_forever()

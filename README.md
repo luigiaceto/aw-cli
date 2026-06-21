@@ -6,16 +6,17 @@ Interfaccia web locale per navigare e guardare anime senza pubblicità o pop-up.
 
 <img width="1470" height="877" alt="Screenshot 2026-06-16 alle 22 43 53" src="https://github.com/user-attachments/assets/254eb4e0-bc87-42bb-b0ad-25f833ad1f04" />
 
-`aw-web` avvia un sito web locale su `http://127.0.0.1:8765` con ricerca anime, ultimi episodi, watchlist, preferiti, anime stagionali, copertine e player integrato nel browser o con MPV/VLC.
+`aw-web` avvia un sito web locale su `http://127.0.0.1:8765` con ricerca anime, ultimi episodi, watchlist, preferiti, anime stagionali, copertine e player integrato nel browser.
 
 ## Indice
 
 - [Installazione](#installazione-su-macos-unico-os-supportato-e-testato-attualmente)
+- [App macOS DMG](#app-macos-dmg)
 - [Avvio](#avvio)
 - [Utilizzo](#utilizzo)
 - [Anime Stagionali](#anime-stagionali)
 - [Watchlist, Preferiti e Database](#watchlist-preferiti-e-database)
-- [Player Browser e MPV/VLC](#player-browser-e-mpvvlc)
+- [Player Browser](#player-browser)
 - [Domande Frequenti](#domande-frequenti)
 - [Problemi Noti](#problemi-noti)
 
@@ -24,18 +25,11 @@ Interfaccia web locale per navigare e guardare anime senza pubblicità o pop-up.
 Sono richiesti:
 
 - [uv](https://github.com/astral-sh/uv)
-- MPV o VLC, come video player fallback esterno
 
-Su macOS puoi installare `uv` e `mpv` tramite [Homebrew](https://brew.sh/) con:
-
-```bash
-brew install uv mpv
-```
-
-Oppure, se preferisci VLC:
+Su macOS puoi installare `uv` tramite [Homebrew](https://brew.sh/) con:
 
 ```bash
-brew install uv vlc
+brew install uv
 ```
 
 ### Installazione (Globale) Da GitHub
@@ -67,6 +61,32 @@ Per aggiornare `aw-web` all'ultima versione della repository, eseguire il comand
 ```bash
 uv tool install --force --managed-python --python 3.13 git+https://github.com/luigiaceto/aw-web.git
 ```
+
+## App macOS DMG
+
+Il progetto include anche un wrapper macOS nativo basato su `WKWebView`. La app avvia il backend Python in background, mostra l'interfaccia dentro una finestra macOS e usa lo stesso database locale di `aw-web`.
+
+Per compilare il DMG servono, sulla macchina dello sviluppatore:
+
+- Xcode installato;
+- `uv`, usato dallo script per impacchettare il backend Python;
+- `hdiutil`, gia incluso in macOS.
+
+L'utente finale invece installa solo il DMG: Python, `aw-web` e le dipendenze Python vengono inclusi dentro `AwWeb.app`.
+
+Per creare il DMG:
+
+```bash
+scripts/build_macos_dmg.sh
+```
+
+Alla fine troverai:
+
+```text
+dist/AwWeb.dmg
+```
+
+La app non e firmata ne notarizzata. Al primo avvio macOS potrebbe quindi mostrare un avviso di sicurezza.
 
 ## Avvio
 
@@ -104,7 +124,7 @@ Nella pagina anime puoi:
 - aggiungere o rimuovere l'anime dalla watchlist con il pulsante segnalibro;
 - aggiungere o rimuovere l'anime dai preferiti con il pulsante cuore;
 - scegliere un episodio;
-- guardarlo nel browser o aprirlo in MPV/VLC.
+- guardarlo nel player browser integrato.
 
 ## Anime Stagionali
 
@@ -136,11 +156,7 @@ Nel database vengono salvati:
 
 ATTENZIONE: in caso di cancellazione del database locale perderete i vostri progressi fatti su questa WebApp.
 
-## Player Browser e MPV/VLC
-
-`aw-web` supporta due modalità di riproduzione.
-
-### Browser
+## Player Browser
 
 Il player browser prova prima la modalità diretta:
 
@@ -160,10 +176,6 @@ Nella pagina player viene mostrato un badge in alto a destra:
 - blu: `Buffering`
 - giallo: `Proxy fallback`
 - rosso: `Errore video`
-
-### MPV/VLC
-
-MPV/VLC resta disponibile come fallback esterno. Di solito è più efficiente e più robusto del player browser, soprattutto per seek, codec e stream problematici.
 
 ## Domande Frequenti
 
@@ -193,13 +205,6 @@ uv tool install aw-web
 
   Poi chiudi e riapri il terminale.
 
-- Se il player browser fallisce, prova il pulsante MPV/VLC.
-
-- Se MPV/VLC non si apre, verifica che sia installato e disponibile nel PATH:
-
-  ```bash
-  which mpv
-  which vlc
-  ```
+- Se il player browser fallisce, riapri l'episodio o prova un altro stream quando disponibile.
 
 - Se appare un errore di certificati SSL, potrebbe essere necessario aggiornare i certificati del sistema.
