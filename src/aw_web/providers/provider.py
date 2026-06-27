@@ -171,6 +171,22 @@ class Provider(ABC):
         """
         return self._episode_link(anime, episode)
 
+    @error_handler(relink=True)
+    def episode_links(self, anime: Anime, episode: Anime.Episode) -> list[str]:
+        """
+        Cerca i link video disponibili per l'episodio.
+
+        Il primo link è quello preferito; eventuali link successivi sono mirror
+        da usare come fallback quando il provider restituisce pagine di errore.
+        """
+        links = self._episode_links(anime, episode)
+        if not links:
+            raise ProviderError("Nessun link video trovato")
+        return links
+
+    def _episode_links(self, anime: Anime, episode: Anime.Episode) -> list[str]:
+        return [self._episode_link(anime, episode)]
+
     @abstractmethod
     def _episode_link(self, anime: Anime, episode: Anime.Episode) -> str:
         """

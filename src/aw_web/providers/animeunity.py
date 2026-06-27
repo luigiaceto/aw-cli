@@ -6,6 +6,31 @@ from httpx import HTTPError
 from ..anime import Anime, AnimeStatus
 from .provider import Provider
 
+
+STREAM_URL_PATTERNS = (
+    re.compile(r"""window\.downloadUrl\s*=\s*["'](?P<url>https?:\\?/\\?/[^"']+)["']""", re.IGNORECASE),
+    re.compile(r"""(?:downloadUrl|file|source|src|url)\s*[:=]\s*["'](?P<url>https?:\\?/\\?/[^"']+)["']""", re.IGNORECASE),
+    re.compile(r"""data-(?:url|src|link)=["'](?P<url>https?:\\?/\\?/[^"']+)["']""", re.IGNORECASE),
+    re.compile(r"""["'](?P<url>https?:\\?/\\?/[^"']+\.(?:mp4|m3u8)(?:\?[^"']*)?)["']""", re.IGNORECASE),
+)
+
+
+def clean_stream_url(url: str) -> str:
+    return unescape(url).replace("\\/", "/").strip()
+
+
+def stream_urls_from_html(html: str) -> list[str]:
+    urls: list[str] = []
+    seen: set[str] = set()
+    for pattern in STREAM_URL_PATTERNS:
+        for match in pattern.finditer(html):
+            url = clean_stream_url(match.group("url"))
+            if url and url not in seen:
+                seen.add(url)
+                urls.append(url)
+    return urls
+
+
 class Animeunity(Provider):
     """
     Classe che gestisce il collegamento con AnimeUnity.
@@ -98,6 +123,9 @@ class Animeunity(Provider):
         return episodes
 
     def _episode_link(self, anime: Anime, episode: Anime.Episode) -> str:
+        return self._episode_links(anime, episode)[0]
+
+    def _episode_links(self, anime: Anime, episode: Anime.Episode) -> list[str]:
         embed_url = f"{self.BASE_URL}/embed-url/{episode.ref}"
         response = self.Client.get(embed_url)
         response.raise_for_status()
@@ -107,12 +135,10 @@ class Animeunity(Provider):
         video_response = self.Client.get(iframe_src)
         video_response.raise_for_status()
 
-        # Usa una regex per estrarre il link video MP4 dallo script
-        match = re.search(r"window.downloadUrl\s*=\s*'([^']*)", video_response.text)
-        if not match:
+        urls = stream_urls_from_html(video_response.text)
+        if not urls:
             raise ValueError("Link video non trovato nella pagina")
-        src_mp4 = match.group(1)
-        return src_mp4
+        return urls
 
     def _info_anime(self, anime: Anime):
         if not anime.ref.isdigit():

@@ -2,7 +2,7 @@ import json
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from aw_web.providers.animeunity import Animeunity
+from aw_web.providers.animeunity import Animeunity, stream_urls_from_html
 from aw_web.anime import Anime, AnimeStatus
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -89,6 +89,23 @@ class TestAnimeunity:
             # First call is to embed-url/12345
             args, _ = mock_client.get.call_args_list[0]
             assert "embed-url/12345" in args[0]
+
+    def test_animeunity_extracts_multiple_stream_urls(self):
+        html = """
+        <script>
+          window.downloadUrl = 'https:\\/\\/cdn.example.com\\/server1.mp4';
+          const players = [
+            { label: 'server2', file: "https://cdn.example.com/server2.mp4" },
+            { label: 'hls', src: "https://cdn.example.com/playlist.m3u8" }
+          ];
+        </script>
+        """
+
+        assert stream_urls_from_html(html) == [
+            "https://cdn.example.com/server1.mp4",
+            "https://cdn.example.com/server2.mp4",
+            "https://cdn.example.com/playlist.m3u8",
+        ]
 
 
     def test_animeunity_info_anime(self, au):

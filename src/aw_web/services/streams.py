@@ -24,6 +24,7 @@ def stream_token(provider_name: str, anime: Anime, episode_num: str) -> str:
         "anime": anime_to_json(anime),
         "episode": episode_num,
         "url": "",
+        "urls": [],
         "created_at": time.time(),
     }
     return token
@@ -65,15 +66,40 @@ def stream_context(token: str) -> tuple[str, Anime, Anime.Episode]:
     return provider_name, anime, anime.episode(episode_num)
 
 
-def resolve_episode_url(token: str) -> tuple[str, dict[str, str]]:
+def resolve_episode_urls(token: str, *, refresh: bool = False) -> tuple[list[str], dict[str, str]]:
     data = STREAMS.get(token)
-    if data and data.get("url"):
+    if data and not refresh:
         provider_name = data["provider"]
-        return validate_media_url(str(data["url"])), dict(get_provider(provider_name).Client.headers)
+        cached_urls = data.get("urls")
+        if isinstance(cached_urls, list) and cached_urls:
+            urls = [validate_media_url(str(url)) for url in cached_urls]
+            selected_url = str(data.get("url") or "")
+            if selected_url in urls:
+                urls = [selected_url] + [url for url in urls if url != selected_url]
+            return urls, dict(get_provider(provider_name).Client.headers)
+        if data.get("url"):
+            return [validate_media_url(str(data["url"]))], dict(get_provider(provider_name).Client.headers)
 
     provider_name, anime, episode = stream_context(token)
     provider = get_provider(provider_name)
-    url = validate_media_url(provider.episode_link(anime, episode))
+    urls = []
+    seen = set()
+    for raw_url in provider.episode_links(anime, episode):
+        try:
+            url = validate_media_url(str(raw_url))
+        except RuntimeError:
+            continue
+        if url not in seen:
+            seen.add(url)
+            urls.append(url)
+    if not urls:
+        raise RuntimeError("Nessun URL video valido trovato.")
     if data is not None:
-        data["url"] = url
-    return url, dict(provider.Client.headers)
+        data["urls"] = urls
+        data["url"] = urls[0]
+    return urls, dict(provider.Client.headers)
+
+
+def resolve_episode_url(token: str) -> tuple[str, dict[str, str]]:
+    urls, headers = resolve_episode_urls(token)
+    return urls[0], headers
