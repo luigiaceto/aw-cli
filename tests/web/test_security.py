@@ -3,7 +3,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from aw_web.anime import Anime
-from aw_web.services.playback import validate_media_url
+from aw_web import utilities as ut
+from aw_web.services.playback import open_external_player, validate_media_url
 from aw_web.services.streams import STREAM_TTL_SECONDS, stream_context, stream_token
 from aw_web.web.components import page
 from aw_web.web.server import ALLOWED_ORIGINS, WebHandler, favicon_bytes, should_refresh_stream_url
@@ -31,6 +32,32 @@ def test_validate_media_url_allows_public_http_urls():
 def test_validate_media_url_rejects_local_targets(url):
     with pytest.raises(RuntimeError):
         validate_media_url(url)
+
+
+def test_external_player_uses_only_mpv_even_with_stale_non_mpv_config(monkeypatch):
+    calls = []
+    monkeypatch.setattr(ut, "config_data", {"player": {"type": "external", "path": "/usr/bin/external-player"}})
+
+    monkeypatch.setattr(
+        "aw_web.services.playback.shutil.which",
+        lambda name: "/usr/bin/mpv" if name == "mpv" else None,
+    )
+    monkeypatch.setattr(
+        "aw_web.services.playback.subprocess.Popen",
+        lambda command, **kwargs: calls.append(command),
+    )
+
+    open_external_player("https://cdn.example.com/video.mp4", "Episode 1")
+
+    assert calls == [
+        [
+            "/usr/bin/mpv",
+            "https://cdn.example.com/video.mp4",
+            "--force-media-title=Episode 1",
+            "--fullscreen",
+            "--keep-open",
+        ]
+    ]
 
 
 def test_stream_tokens_expire(monkeypatch):

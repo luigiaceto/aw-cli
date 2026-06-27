@@ -45,15 +45,16 @@ def validate_media_url(url: str) -> str:
 def open_external_player(url: str, title: str) -> None:
     url = validate_media_url(url)
     player = ut.config_data.get("player", {})
-    player_type = str(player.get("type") or "mpv")
-    player_path = str(player.get("path") or shutil.which(player_type) or "")
-    if not player_path:
-        raise RuntimeError("Nessun player trovato. Installa mpv/vlc o usa il player browser.")
-
-    if player_type == "vlc" or "vlc" in Path(player_path).name.lower():
-        command = [player_path, url, "--meta-title", title, "--fullscreen"]
+    configured_path = str(player.get("path") or "")
+    configured_type = str(player.get("type") or "")
+    if configured_type == "mpv" and configured_path and "mpv" in Path(configured_path).name.lower():
+        player_path = configured_path
     else:
-        command = [player_path, url, f"--force-media-title={title}", "--fullscreen", "--keep-open"]
+        player_path = shutil.which("mpv") or ""
+    if not player_path:
+        raise RuntimeError("Nessun player trovato. Installa mpv o usa il player browser.")
+
+    command = [player_path, url, f"--force-media-title={title}", "--fullscreen", "--keep-open"]
     try:
         subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except OSError as exc:

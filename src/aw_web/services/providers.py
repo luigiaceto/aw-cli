@@ -4,19 +4,16 @@ from __future__ import annotations
 
 import shutil
 from functools import lru_cache
-from pathlib import Path
 
 from aw_web import providers, utilities as ut
 from aw_web.web import state as _state
 
 
 def ensure_config() -> None:
-    player_path = shutil.which("mpv") or shutil.which("vlc") or ""
-    player_type = "vlc" if player_path and "vlc" in Path(player_path).name.lower() else "mpv"
     ut.config_data = {
         "general": {"specials": False},
         "provider": {"source": "animeunity"},
-        "player": {"type": player_type, "path": player_path},
+        "player": {"type": "mpv", "path": shutil.which("mpv") or ""},
     }
 
 

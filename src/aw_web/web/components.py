@@ -280,7 +280,7 @@ def episode_row(provider_name: str, anime: Anime, episode: Anime.Episode, curren
           <input type="hidden" name="provider" value="{esc(provider_name)}">
           <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
           <input type="hidden" name="episode" value="{esc(episode.num)}">
-          <button class="secondary">MPV/VLC</button>
+          <button class="secondary">MPV</button>
         </form>
       </div>
     </div>

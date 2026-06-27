@@ -6,7 +6,7 @@ Interfaccia web locale per navigare e guardare anime senza pubblicità o pop-up.
 
 <img width="1470" height="877" alt="Screenshot 2026-06-16 alle 22 43 53" src="https://github.com/user-attachments/assets/254eb4e0-bc87-42bb-b0ad-25f833ad1f04" />
 
-`aw-web` avvia un sito web locale su `http://127.0.0.1:8765` con ricerca anime, ultimi episodi, watchlist, preferiti, anime stagionali, copertine e player integrato nel browser o con MPV/VLC.
+`aw-web` avvia un sito web locale su `http://127.0.0.1:8765` con ricerca anime, ultimi episodi, watchlist, preferiti, anime stagionali, copertine e player integrato nel browser o con MPV.
 
 ## Indice
 
@@ -15,16 +15,16 @@ Interfaccia web locale per navigare e guardare anime senza pubblicità o pop-up.
 - [Utilizzo](#utilizzo)
 - [Anime Stagionali](#anime-stagionali)
 - [Watchlist, Preferiti e Database](#watchlist-preferiti-e-database)
-- [Player Browser e MPV/VLC](#player-browser-e-mpvvlc)
+- [Player Browser e MPV](#player-browser-e-mpv)
 - [Domande Frequenti](#domande-frequenti)
 - [Problemi Noti](#problemi-noti)
 
 ## Installazione su MacOS (unico OS supportato e testato attualmente)
 
-Sono richiesti:
+La guida d'installazione comprende:
 
 - [uv](https://github.com/astral-sh/uv)
-- MPV o VLC, come video player fallback esterno
+- MPV, come video player fallback esterno
 
 Su macOS puoi installare `uv` e `mpv` tramite [Homebrew](https://brew.sh/) con:
 
@@ -32,13 +32,15 @@ Su macOS puoi installare `uv` e `mpv` tramite [Homebrew](https://brew.sh/) con:
 brew install uv mpv
 ```
 
-Oppure, se preferisci VLC:
+Dopo l'installazione di `uv` potrebbe essere necessario aggiornare la shell. Dunque fare:
 
 ```bash
-brew install uv vlc
+uv tool update-shell
 ```
 
-### Installazione (Globale) Da GitHub
+```bash
+exec zsh
+```
 
 Puoi installare `aw-web` direttamente da questa repository GitHub tramite `uv`:
 
@@ -52,15 +54,7 @@ uv tool install --managed-python --python 3.13 git+https://github.com/luigiaceto
 
 il primo comando installa python 3.13 dentro `uv` in modo da non interferire con altre installazioni python di sistema, mentre il secondo comando installa la WebApp come tool globale in un ambiente isolato.
 
-Dopo l'installazione potrebbe essere necessario aggiornare la shell per permettere di fargli eseguire `aw-web`. Dunque fare:
-
-```bash
-uv tool update-shell
-```
-
-```bash
-exec zsh
-```
+## Come Aggiornare l'App
 
 Per aggiornare `aw-web` all'ultima versione della repository, eseguire il comando:
 
@@ -104,7 +98,7 @@ Nella pagina anime puoi:
 - aggiungere o rimuovere l'anime dalla watchlist con il pulsante segnalibro;
 - aggiungere o rimuovere l'anime dai preferiti con il pulsante cuore;
 - scegliere un episodio;
-- guardarlo nel browser o aprirlo in MPV/VLC.
+- guardarlo nel browser o aprirlo in MPV.
 
 ## Anime Stagionali
 
@@ -136,7 +130,7 @@ Nel database vengono salvati:
 
 ATTENZIONE: in caso di cancellazione del database locale perderete i vostri progressi fatti su questa WebApp.
 
-## Player Browser e MPV/VLC
+## Player Browser e MPV
 
 `aw-web` supporta due modalità di riproduzione.
 
@@ -161,9 +155,9 @@ Nella pagina player viene mostrato un badge in alto a destra:
 - giallo: `Proxy fallback`
 - rosso: `Errore video`
 
-### MPV/VLC
+### MPV
 
-MPV/VLC resta disponibile come fallback esterno. Di solito è più efficiente e più robusto del player browser, soprattutto per seek, codec e stream problematici.
+MPV resta disponibile come fallback esterno. Di solito è più efficiente e più robusto del player browser, soprattutto per seek, codec e stream problematici.
 
 ## Domande Frequenti
 
@@ -193,13 +187,12 @@ uv tool install aw-web
 
   Poi chiudi e riapri il terminale.
 
-- Se il player browser fallisce, prova il pulsante MPV/VLC.
+- Se il player browser fallisce, prova il pulsante MPV.
 
-- Se MPV/VLC non si apre, verifica che sia installato e disponibile nel PATH:
+- Se MPV non si apre, verifica che sia installato e disponibile nel PATH:
 
   ```bash
   which mpv
-  which vlc
   ```
 
 - Se appare un errore di certificati SSL, potrebbe essere necessario aggiornare i certificati del sistema.
