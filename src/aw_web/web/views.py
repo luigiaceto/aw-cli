@@ -18,11 +18,9 @@ from aw_web.services.anilist import (
 )
 from aw_web.services.matching import best_seasonal_match, seasonal_open_url
 from aw_web.services.providers import default_provider_name, get_provider, set_current_provider
-from aw_web.services.streams import resolve_episode_url, stream_context
 from aw_web.web.components import (
     card,
     collection_toggle,
-    csrf_input,
     episode_row,
     favorite_card,
     image_html,
@@ -32,7 +30,7 @@ from aw_web.web.components import (
     watch_card,
 )
 from aw_web.web.state import DB
-from aw_web.web.utils import anime_to_json, esc, parse_int, provider_error, q
+from aw_web.web.utils import esc, parse_int, provider_error, q
 
 
 def redirect(location: str) -> bytes:
@@ -279,171 +277,3 @@ def render_anime(params: dict[str, list[str]]) -> bytes:
     </section>
     """
     return page(anime.name, body)
-
-
-def render_watch(params: dict[str, list[str]]) -> bytes:
-    token = params.get("token", [""])[0]
-    try:
-        provider_name, anime, episode = stream_context(token)
-    except Exception as exc:
-        return page("Player", f'<p class="error">{esc(exc)}</p><p><a href="/">Torna alla home</a></p>')
-
-    back_url = (
-        f"/anime?provider={q(provider_name)}&name={q(anime.name)}&ref={q(anime.ref)}"
-        f"&curr_ep={q(anime.curr_ep)}&last_ep={q(anime.last_ep)}&anilist_id={q(anime.anilist_id)}"
-    )
-    direct_url = ""
-    direct_error = ""
-    try:
-        direct_url, _ = resolve_episode_url(token)
-    except Exception as exc:
-        direct_error = provider_error(exc)
-
-    prev_html = ""
-    if episode.has_prev():
-        prev_ep = episode.prev().num
-        prev_html = f"""
-        <form action="/watch/start" method="post">
-          {csrf_input()}
-          <input type="hidden" name="provider" value="{esc(provider_name)}">
-          <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
-          <input type="hidden" name="episode" value="{esc(prev_ep)}">
-          <button class="secondary">&#8592; Ep. {esc(prev_ep)}</button>
-        </form>"""
-
-    next_html = ""
-    if episode.has_next():
-        next_ep = episode.next().num
-        next_html = f"""
-        <form action="/watch/start" method="post">
-          {csrf_input()}
-          <input type="hidden" name="provider" value="{esc(provider_name)}">
-          <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
-          <input type="hidden" name="episode" value="{esc(next_ep)}">
-          <button class="secondary">Ep. {esc(next_ep)} &#8594;</button>
-        </form>"""
-
-    body = f"""
-    <section class="watch-page">
-      <div class="section-title"><h2>{esc(anime.name)} - Ep. {esc(episode.num)}</h2><div id="playback-mode" class="mode-pill mode-direct"><span></span>Browser diretto</div></div>
-      {f'<p class="error">{esc(direct_error)}</p>' if direct_error else ''}
-      <div class="video-shell">
-        <video id="player" class="video-player" controls autoplay playsinline preload="metadata"></video>
-      </div>
-      <div class="row-actions">
-        <a class="button" href="{back_url}">Torna agli episodi</a>
-        <div class="nav-group">
-          {prev_html}
-          {next_html}
-        </div>
-      </div>
-      <p id="player-status" class="muted">Avvio in modalita browser diretta. Se non funziona, passo automaticamente al proxy locale.</p>
-    </section>
-    <script>
-      const video = document.getElementById('player');
-      const status = document.getElementById('player-status');
-      const mode = document.getElementById('playback-mode');
-      const directUrl = {json.dumps(direct_url)};
-      const proxyUrl = '/stream?token={esc(token)}';
-      let restored = false;
-      let usingProxy = false;
-      let pendingResumeAt = 0;
-      function isEditingText(event) {{
-        const target = event.target;
-        if (!target) return false;
-        const tagName = target.tagName;
-        return target.isContentEditable || tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT';
-      }}
-      function fullscreenElement() {{
-        return document.fullscreenElement || document.webkitFullscreenElement || null;
-      }}
-      function requestVideoFullscreen() {{
-        if (video.requestFullscreen) {{
-          return video.requestFullscreen();
-        }}
-        if (video.webkitRequestFullscreen) {{
-          return video.webkitRequestFullscreen();
-        }}
-        if (video.webkitEnterFullscreen) {{
-          return video.webkitEnterFullscreen();
-        }}
-      }}
-      function exitFullscreen() {{
-        if (document.exitFullscreen) {{
-          return document.exitFullscreen();
-        }}
-        if (document.webkitExitFullscreen) {{
-          return document.webkitExitFullscreen();
-        }}
-      }}
-      document.addEventListener('keydown', (event) => {{
-        if (event.key.toLowerCase() !== 'f' || event.repeat || event.metaKey || event.ctrlKey || event.altKey || isEditingText(event)) {{
-          return;
-        }}
-        event.preventDefault();
-        const action = fullscreenElement() ? exitFullscreen() : requestVideoFullscreen();
-        if (action && action.catch) action.catch(() => {{}});
-      }});
-      function setMode(kind, label) {{
-        if (!mode) return;
-        mode.className = 'mode-pill mode-' + kind;
-        mode.innerHTML = '<span></span>' + label;
-      }}
-      function useProxy() {{
-        if (usingProxy) return;
-        usingProxy = true;
-        restored = false;
-        pendingResumeAt = video.currentTime || 0;
-        setMode('proxy', 'Proxy fallback');
-        if (status) status.textContent = 'Link diretto non riproducibile dal browser: uso il proxy locale aw-web.';
-        video.src = proxyUrl;
-        video.load();
-        video.play().catch(() => {{}});
-      }}
-      async function showProxyErrorDetails() {{
-        if (!status) return;
-        try {{
-          const response = await fetch(proxyUrl, {{ headers: {{ Range: 'bytes=0-0' }} }});
-          if (response.ok) return;
-          const text = await response.text();
-          const doc = new DOMParser().parseFromString(text, 'text/html');
-          const detail = doc.querySelector('.error')?.textContent || text;
-          status.textContent = detail.trim() || `Errore proxy locale: HTTP ${{response.status}}.`;
-        }} catch (error) {{
-          status.textContent = 'Errore durante la riproduzione anche con proxy locale.';
-        }}
-      }}
-      video.addEventListener('loadedmetadata', () => {{
-        const target = pendingResumeAt;
-        if (!restored && target > 5 && target < video.duration - 10) {{
-          video.currentTime = target;
-        }}
-        restored = true;
-      }});
-      video.addEventListener('playing', () => {{
-        setMode(usingProxy ? 'proxy' : 'direct', usingProxy ? 'Proxy fallback' : 'Browser diretto');
-      }});
-      video.addEventListener('waiting', () => {{
-        setMode('buffering', usingProxy ? 'Buffering proxy' : 'Buffering');
-      }});
-      video.addEventListener('error', () => {{
-        if (usingProxy) {{
-          setMode('error', 'Errore video');
-          if (status) status.textContent = 'Errore durante la riproduzione anche con proxy locale.';
-          showProxyErrorDetails();
-          return;
-        }}
-        useProxy();
-      }});
-      video.addEventListener('stalled', () => {{
-        setMode('buffering', usingProxy ? 'Buffering proxy' : 'Buffering');
-      }});
-      if (directUrl) {{
-        setMode('direct', 'Browser diretto');
-        video.src = directUrl;
-      }} else {{
-        useProxy();
-      }}
-    </script>
-    """
-    return page(f"Player - {anime.name}", body)

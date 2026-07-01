@@ -62,16 +62,6 @@ section { margin-top: 34px; }
 .episodes { display: grid; gap: 9px; }
 .episode { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(20, 24, 35, .88); }
 .episode.active { border-color: rgba(143, 209, 79, .75); background: rgba(143, 209, 79, .1); }
-.watch-page { max-width: 1120px; margin-inline: auto; }
-.nav-group { display: flex; gap: 10px; margin-left: auto; align-items: center; }
-.video-shell { position: relative; }
-.video-player { width: 100%; max-height: 72vh; background: #000; border: 1px solid var(--line); border-radius: 24px; box-shadow: 0 24px 80px rgba(0,0,0,.45); }
-.mode-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid currentColor; border-radius: 999px; background: rgba(8, 10, 14, .78); font-size: .82rem; font-weight: 900; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,.32); white-space: nowrap; }
-.mode-pill span { width: 9px; height: 9px; border-radius: 50%; color: inherit; background: currentColor; box-shadow: 0 0 18px currentColor; }
-.mode-direct { color: #8fd14f; }
-.mode-buffering { color: #7cc7ff; }
-.mode-proxy { color: #ffd166; }
-.mode-error { color: #ff6b6b; }
 .error { color: #ffd0d0; background: rgba(255, 107, 107, .12); border: 1px solid rgba(255, 107, 107, .4); padding: 14px; border-radius: 14px; }
 @media (max-width: 720px) { .topbar { align-items: stretch; flex-direction: column; } .main-nav { justify-content: space-between; } .search { max-width: none; } .search select { display: none; } .detail { grid-template-columns: 1fr; } .poster-wrap { max-width: 240px; } .saved-card { grid-column: auto; display: block; } .saved-card .cover { width: 100%; height: auto; } .episode { align-items: stretch; flex-direction: column; } .row-actions.compact { justify-content: flex-start; } .season-toolbar { align-items: stretch; flex-direction: column; } .season-picker, .season-controls { justify-content: space-between; } .season-controls select, .season-controls input { min-width: 0; width: 100%; } }
 """

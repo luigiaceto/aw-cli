@@ -1,4 +1,4 @@
-"""HTTP request routing and local video proxy for the web interface."""
+"""HTTP request routing for the local web interface."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ from secrets import compare_digest
 from urllib.parse import parse_qs, urlparse
 
 from aw_web.anime import Anime
+from aw_web.services.playback import open_external_player
 from aw_web.services.progress import save_watch_progress
 from aw_web.services.providers import get_provider, set_current_provider
-from aw_web.services.streams import resolve_episode_url, resolve_episode_urls, stream_context, stream_token
 from aw_web.web.components import page
-from aw_web.web.state import CSRF_TOKEN, DB, HOST, PORT, STREAMS
+from aw_web.web.state import CSRF_TOKEN, DB, HOST, PORT
 from aw_web.web.utils import anime_from_json, esc, q
 from aw_web.web.views import (
     redirect,
@@ -22,36 +22,15 @@ from aw_web.web.views import (
     render_search,
     render_seasonal,
     render_seasonal_open,
-    render_watch,
 )
 
 
 MAX_POST_BYTES = 1024 * 1024
 ALLOWED_ORIGINS = {f"http://{HOST}:{PORT}", f"http://localhost:{PORT}"}
-REFRESH_STREAM_STATUSES = {403, 404, 410, 416, 502, 503, 504}
-MEDIA_CONTENT_TYPES = {
-    "application/mp4",
-    "application/octet-stream",
-    "application/vnd.apple.mpegurl",
-    "application/x-mpegurl",
-    "binary/octet-stream",
-}
 
 
 def favicon_bytes() -> bytes:
     return files("aw_web.web").joinpath("static/favicon.ico").read_bytes()
-
-
-def should_refresh_stream_url(status_code: int, content_type: str | None) -> bool:
-    if status_code in REFRESH_STREAM_STATUSES:
-        return True
-    if not 200 <= status_code < 300:
-        return False
-    if not content_type:
-        return False
-
-    media_type = content_type.split(";", 1)[0].strip().lower()
-    return not (media_type.startswith("video/") or media_type in MEDIA_CONTENT_TYPES)
 
 
 def handle_add_watchlist(fields: dict[str, list[str]]) -> bytes:
@@ -126,15 +105,20 @@ def handle_remove_favorite(fields: dict[str, list[str]]) -> bytes:
     return redirect("/")
 
 
-def handle_watch_start(fields: dict[str, list[str]]) -> bytes:
+def handle_play(fields: dict[str, list[str]]) -> bytes:
     provider_name = fields.get("provider", [""])[0]
     anime_values = fields.get("anime", ["{}"])
     anime = anime_from_json(anime_values[0])
     episode_num = fields.get("episode", [anime.curr_ep])[0]
-    token = stream_token(provider_name, anime, episode_num)
-    _, anime, episode = stream_context(token)
+    provider = get_provider(provider_name)
+
+    if not anime.has_episode(episode_num):
+        provider.episodes(anime)
+    episode = anime.episode(episode_num)
+    url = provider.episode_link(anime, episode)
+    open_external_player(url, str(episode))
     save_watch_progress(provider_name, anime, episode)
-    return redirect(f"/watch?token={q(token)}")
+    return redirect(anime_redirect_url(provider_name, anime))
 
 
 class WebHandler(BaseHTTPRequestHandler):
@@ -158,10 +142,6 @@ class WebHandler(BaseHTTPRequestHandler):
             self.respond(render_seasonal(params))
         elif parsed.path == "/stagionali/apri":
             self.respond(render_seasonal_open(params))
-        elif parsed.path == "/watch":
-            self.respond(render_watch(params))
-        elif parsed.path == "/stream":
-            self.stream_video(params)
         elif parsed.path == "/favicon.ico":
             self.respond_favicon()
         elif parsed.path == "/set-provider":
@@ -200,8 +180,8 @@ class WebHandler(BaseHTTPRequestHandler):
                 payload = handle_toggle_favorite(fields)
             elif parsed.path == "/favorites/remove":
                 payload = handle_remove_favorite(fields)
-            elif parsed.path == "/watch/start":
-                payload = handle_watch_start(fields)
+            elif parsed.path == "/play":
+                payload = handle_play(fields)
             else:
                 self.send_error(404)
                 return
@@ -218,68 +198,6 @@ class WebHandler(BaseHTTPRequestHandler):
     def valid_csrf(self, fields: dict[str, list[str]]) -> bool:
         token = fields.get("csrf_token", [""])[0]
         return compare_digest(token, CSRF_TOKEN)
-
-    def stream_video(self, params: dict[str, list[str]]) -> None:
-        token = params.get("token", [""])[0]
-        try:
-            data = STREAMS.get(token)
-            if not data:
-                raise RuntimeError("Sessione video scaduta. Riapri l'episodio dalla pagina anime.")
-            provider = get_provider(data["provider"])
-            headers = {}
-            if range_header := self.headers.get("Range"):
-                headers["Range"] = range_header
-
-            last_status = 0
-            last_content_type = ""
-            for refresh in (False, True):
-                urls, _ = resolve_episode_urls(token, refresh=refresh)
-                for url in urls:
-                    with provider.Client.stream("GET", url, headers=headers) as response:
-                        content_type = response.headers.get("content-type")
-                        if should_refresh_stream_url(response.status_code, content_type):
-                            last_status = response.status_code
-                            last_content_type = content_type or "assente"
-                            data["url"] = ""
-                            continue
-
-                        data["url"] = url
-                        cached_urls = data.get("urls")
-                        if isinstance(cached_urls, list):
-                            data["urls"] = [url] + [candidate for candidate in cached_urls if candidate != url]
-                        self.send_response(response.status_code)
-                        for name in (
-                            "content-type",
-                            "content-length",
-                            "content-range",
-                            "accept-ranges",
-                            "cache-control",
-                            "last-modified",
-                            "etag",
-                        ):
-                            value = response.headers.get(name)
-                            if value:
-                                self.send_header(name.title(), value)
-                        if "accept-ranges" not in response.headers:
-                            self.send_header("Accept-Ranges", "bytes")
-                        self.end_headers()
-                        for chunk in response.iter_bytes(1024 * 1024):
-                            if chunk:
-                                self.wfile.write(chunk)
-                        return
-            raise RuntimeError(
-                "Il provider non ha restituito un video valido "
-                f"(HTTP {last_status or 'sconosciuto'}, Content-Type: {last_content_type or 'assente'})."
-            )
-        except (BrokenPipeError, ConnectionResetError):
-            return
-        except Exception as exc:
-            body = page("Errore stream", f'<p class="error">{esc(exc)}</p>')
-            self.send_response(500)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
 
     def respond(self, body: bytes, status: int = 200) -> None:
         if body.startswith(b"REDIRECT:"):

@@ -67,3 +67,40 @@ def available_last_episode(item: dict[str, Any], latest: list[Anime]) -> str:
             candidates.extend(ep.num for ep in latest_anime._episodes)
 
     return max(candidates, key=episode_value, default="0")
+
+
+def next_playable_episode(item: dict[str, Any], latest: list[Anime]) -> str:
+    anime_data = json.loads(str(item["anime_json"]))
+    anime = Anime.from_dict(anime_data)
+    current_episode = str(item["current_episode"])
+    current = episode_value(current_episode)
+    candidates = [
+        str(item["last_episode"]),
+        anime.curr_ep,
+        anime.last_ep,
+        *(ep.num for ep in anime._episodes),
+    ]
+
+    for latest_anime in latest:
+        if anime == latest_anime:
+            candidates.extend([latest_anime.curr_ep, latest_anime.last_ep])
+            candidates.extend(ep.num for ep in latest_anime._episodes)
+
+    last_available = max(candidates, key=episode_value, default="0")
+    if current_episode.isdigit() and last_available.isdigit():
+        next_number = int(current_episode) + 1
+        if next_number <= int(last_available):
+            candidates.append(str(next_number))
+
+    if current <= 0:
+        return min(
+            (candidate for candidate in candidates if episode_value(candidate) > 0),
+            key=episode_value,
+            default=current_episode,
+        )
+
+    return min(
+        (candidate for candidate in candidates if episode_value(candidate) > current),
+        key=episode_value,
+        default=current_episode,
+    )

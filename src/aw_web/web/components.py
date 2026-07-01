@@ -9,7 +9,7 @@ from aw_web.anime import Anime
 from aw_web.services.anilist import get_cover
 from aw_web.web.state import CSRF_TOKEN
 from aw_web.web.styles import CSS
-from aw_web.web.utils import anime_to_json, available_last_episode, esc, has_new_episode, q
+from aw_web.web.utils import anime_to_json, available_last_episode, esc, has_new_episode, next_playable_episode, q
 
 
 def csrf_input() -> str:
@@ -119,14 +119,14 @@ def provider_match_card(anime: Anime, provider_name: str) -> str:
     """
 
 
-def browser_play_form(provider_name: str, anime: Anime, episode_num: str, label: str) -> str:
+def play_form(provider_name: str, anime: Anime, episode_num: str, label: str) -> str:
     return f"""
-    <form action="/watch/start" method="post">
+    <form action="/play" method="post">
       {csrf_input()}
       <input type="hidden" name="provider" value="{esc(provider_name)}">
       <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
       <input type="hidden" name="episode" value="{esc(episode_num)}">
-      <button class="secondary">{esc(label)}</button>
+      <button>{esc(label)}</button>
     </form>
     """
 
@@ -209,7 +209,7 @@ def watch_card(item: dict[str, Any], latest: list[Anime]) -> str:
     new_episode_badge = '<span class="badge new-episode">Nuovo episodio</span>' if has_new_episode(item, latest) else ""
     current_episode = str(item["current_episode"])
     last_episode = available_last_episode(item, latest)
-    playable_episode = current_episode if current_episode != "0" else next(iter(anime.episodes()), current_episode)
+    playable_episode = next_playable_episode(item, latest)
     play_label = "Inizia" if current_episode == "0" else "Riprendi"
     return f"""
     <article class="card saved-card">
@@ -219,7 +219,7 @@ def watch_card(item: dict[str, Any], latest: list[Anime]) -> str:
         <h3><a href="{href}">{esc(item['name'])}</a></h3>
         <p>Sei arrivato all'episodio <strong>{esc(current_episode)}</strong> / {esc(last_episode)}</p>
         <div class="row-actions">
-          <form action="/watch/start" method="post">
+          <form action="/play" method="post">
             {csrf_input()}
             <input type="hidden" name="provider" value="{esc(str(item['provider']))}">
             <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">
@@ -246,7 +246,7 @@ def episode_row(provider_name: str, anime: Anime, episode: Anime.Episode, curren
         {('<span class="badge">ultimo visto</span>' if active else '')}
       </div>
       <div class="row-actions compact">
-        <form action="/watch/start" method="post">
+        <form action="/play" method="post">
           {csrf_input()}
           <input type="hidden" name="provider" value="{esc(provider_name)}">
           <input type="hidden" name="anime" value="{esc(anime_to_json(anime))}">

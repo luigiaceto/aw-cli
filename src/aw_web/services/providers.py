@@ -11,6 +11,7 @@ from aw_web.web import state as _state
 def ensure_config() -> None:
     ut.config_data = {
         "general": {"specials": False},
+        "player": {"type": "mpv", "path": ""},
         "provider": {"source": "animeunity"},
     }
 
