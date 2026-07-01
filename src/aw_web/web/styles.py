@@ -4,14 +4,14 @@ CSS = """
 :root { color-scheme: dark; --bg: #0b0d12; --panel: #141823; --panel-2: #1d2330; --text: #edf2ff; --muted: #a8b3c7; --accent: #8fd14f; --danger: #ff6b6b; --line: #2a3242; }
 * { box-sizing: border-box; }
 html { min-height: 100%; background: var(--bg); }
-body { min-height: 100vh; margin: 0; background: radial-gradient(circle at top left, #25314a 0, #0b0d12 34rem) fixed no-repeat; background-color: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { min-height: 100vh; margin: 0; padding-top: 16px; background: radial-gradient(circle at top left, #25314a 0, #0b0d12 34rem) fixed no-repeat; background-color: var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 a { color: inherit; text-decoration: none; }
-main { width: min(1180px, calc(100% - 32px)); margin: 0 auto 64px; }
-.topbar { position: sticky; top: 0; z-index: 5; display: flex; gap: 18px; align-items: center; justify-content: space-between; padding: 16px max(16px, calc((100vw - 1180px) / 2)); background: rgba(11, 13, 18, .82); border-bottom: 1px solid var(--line); backdrop-filter: blur(16px); }
+main { width: min(1180px, calc(100% - 32px)); margin: 24px auto 64px; }
+.topbar { position: sticky; top: 14px; z-index: 5; display: flex; gap: 18px; align-items: center; justify-content: space-between; width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 10px 12px 10px 18px; background: linear-gradient(135deg, rgba(20, 24, 35, .72), rgba(11, 13, 18, .58)); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; box-shadow: 0 18px 55px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08); backdrop-filter: blur(18px) saturate(140%); -webkit-backdrop-filter: blur(18px) saturate(140%); }
 .main-nav { display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
 .brand { font-weight: 900; letter-spacing: -.03em; font-size: 1.35rem; }
-.nav-link { padding: 9px 11px; border: 1px solid var(--line); border-radius: 12px; background: rgba(20, 24, 35, .72); color: var(--text); font-weight: 800; }
-.nav-link:hover { border-color: rgba(143, 209, 79, .55); }
+.nav-link { padding: 9px 11px; border: 1px solid rgba(255,255,255,.10); border-radius: 12px; background: rgba(20, 24, 35, .45); color: var(--text); font-weight: 800; }
+.nav-link:hover { border-color: rgba(143, 209, 79, .55); background: rgba(143, 209, 79, .10); }
 .search { display: flex; gap: 8px; flex: 1; max-width: 680px; }
 input, select, button, .button { border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; background: var(--panel); color: var(--text); font: inherit; }
 input[type="search"] { flex: 1; min-width: 0; }
@@ -63,5 +63,5 @@ section { margin-top: 34px; }
 .episode { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(20, 24, 35, .88); }
 .episode.active { border-color: rgba(143, 209, 79, .75); background: rgba(143, 209, 79, .1); }
 .error { color: #ffd0d0; background: rgba(255, 107, 107, .12); border: 1px solid rgba(255, 107, 107, .4); padding: 14px; border-radius: 14px; }
-@media (max-width: 720px) { .topbar { align-items: stretch; flex-direction: column; } .main-nav { justify-content: space-between; } .search { max-width: none; } .search select { display: none; } .detail { grid-template-columns: 1fr; } .poster-wrap { max-width: 240px; } .saved-card { grid-column: auto; display: block; } .saved-card .cover { width: 100%; height: auto; } .episode { align-items: stretch; flex-direction: column; } .row-actions.compact { justify-content: flex-start; } .season-toolbar { align-items: stretch; flex-direction: column; } .season-picker, .season-controls { justify-content: space-between; } .season-controls select, .season-controls input { min-width: 0; width: 100%; } }
+@media (max-width: 720px) { body { padding-top: 12px; } main { margin-top: 18px; } .topbar { top: 10px; align-items: stretch; flex-direction: column; width: calc(100% - 24px); padding: 12px; border-radius: 16px; } .main-nav { justify-content: space-between; } .search { max-width: none; } .search select { display: none; } .detail { grid-template-columns: 1fr; } .poster-wrap { max-width: 240px; } .saved-card { grid-column: auto; display: block; } .saved-card .cover { width: 100%; height: auto; } .episode { align-items: stretch; flex-direction: column; } .row-actions.compact { justify-content: flex-start; } .season-toolbar { align-items: stretch; flex-direction: column; } .season-picker, .season-controls { justify-content: space-between; } .season-controls select, .season-controls input { min-width: 0; width: 100%; } }
 """
