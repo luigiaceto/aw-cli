@@ -24,6 +24,7 @@ def test_new_watch_item_starts_with_no_progress(tmp_path):
     assert item is not None
     assert item["current_episode"] == "0"
     assert item["last_episode"] == "12"
+    assert item["episodes_checked_at"] == ""
 
 
 def test_history_does_not_create_watch_item(tmp_path):

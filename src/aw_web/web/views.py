@@ -31,6 +31,7 @@ from aw_web.web.components import (
 )
 from aw_web.web.state import DB
 from aw_web.web.utils import esc, parse_int, provider_error, q
+from aw_web.web.watchlist_refresh import refresh_watchlist_availability
 
 
 def redirect(location: str) -> bytes:
@@ -47,6 +48,11 @@ def render_home() -> bytes:
     except Exception as exc:
         latest_html = f'<p class="error">Impossibile caricare gli ultimi episodi: {esc(provider_error(exc))}</p>'
 
+    watch_items = [
+        item for item in DB.watchlist()
+        if str(item.get("provider") or "") in providers.PROVIDERS_AVAILABLE
+    ]
+    refresh_watchlist_availability(DB, watch_items, provider_factory=get_provider)
     watch_items = [
         item for item in DB.watchlist()
         if str(item.get("provider") or "") in providers.PROVIDERS_AVAILABLE

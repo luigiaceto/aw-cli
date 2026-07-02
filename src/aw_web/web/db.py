@@ -41,6 +41,7 @@ class WebDatabase:
                     cover_url TEXT NOT NULL DEFAULT '',
                     banner_url TEXT NOT NULL DEFAULT '',
                     anime_json TEXT NOT NULL,
+                    episodes_checked_at TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(provider, ref)
@@ -267,6 +268,55 @@ class WebDatabase:
                 WHERE provider = ? AND ref = ?
                 """,
                 (episode, provider, ref),
+            )
+
+    def update_watch_item_availability(
+        self,
+        *,
+        provider: str,
+        ref: str,
+        anime_data: dict[str, Any],
+        cover_url: str,
+        banner_url: str,
+        checked_at: str,
+    ) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                UPDATE watchlist
+                SET name = ?,
+                    anilist_id = ?,
+                    last_episode = ?,
+                    status = ?,
+                    cover_url = ?,
+                    banner_url = ?,
+                    anime_json = ?,
+                    episodes_checked_at = ?
+                WHERE provider = ? AND ref = ?
+                """,
+                (
+                    str(anime_data.get("name") or ""),
+                    int(anime_data.get("id_anilist") or 0),
+                    str(anime_data.get("last_ep") or "0"),
+                    str(anime_data.get("status") or "Sconosciuto"),
+                    cover_url,
+                    banner_url,
+                    json.dumps(anime_data, ensure_ascii=False),
+                    checked_at,
+                    provider,
+                    ref,
+                ),
+            )
+
+    def mark_watch_item_episodes_checked(self, provider: str, ref: str, checked_at: str) -> None:
+        with self.connect() as conn:
+            conn.execute(
+                """
+                UPDATE watchlist
+                SET episodes_checked_at = ?
+                WHERE provider = ? AND ref = ?
+                """,
+                (checked_at, provider, ref),
             )
 
     def remove_watch_item(self, item_id: int) -> None:

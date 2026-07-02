@@ -2,20 +2,60 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import signal
 import sys
 import webbrowser
 from http.server import ThreadingHTTPServer
+from pathlib import Path
+from typing import Sequence
 
 from aw_web.services.providers import ensure_config
-from aw_web.web.server import WebHandler
-from aw_web.web.state import DB
-from aw_web.web.state import HOST, PORT
+from aw_web.web.db import default_db_path
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Avvia l'interfaccia web locale di aw-web.")
+    parser.add_argument(
+        "--reset-db",
+        action="store_true",
+        help="Cancella il database locale di aw-web e termina.",
+    )
+    return parser
+
+
+def reset_database(path: Path) -> bool:
+    answer = input(f"Cancellare definitivamente il database locale in {path}? [yes/no] ")
+    if answer.strip().lower() != "yes":
+        print("Operazione annullata.")
+        return False
+
+    removed = False
+    for candidate in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
+        try:
+            candidate.unlink()
+            removed = True
+        except FileNotFoundError:
+            pass
+
+    if removed:
+        print(f"Database locale cancellato: {path}")
+    else:
+        print(f"Nessun database locale trovato in {path}")
+    return removed
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
+    if args.reset_db:
+        reset_database(default_db_path())
+        return
+
     ensure_config()
+    from aw_web.web.server import WebHandler
+    from aw_web.web.state import DB, HOST, PORT
+
     server = ThreadingHTTPServer((HOST, PORT), WebHandler)
     url = f"http://{HOST}:{PORT}"
     print(f"aw-web avviato su {url}")

@@ -123,6 +123,14 @@ Nel database vengono salvati:
 
 ATTENZIONE: in caso di cancellazione del database locale perderete i vostri progressi fatti su questa WebApp.
 
+Per cancellare il database locale da terminale:
+
+```bash
+aw-web --reset-db
+```
+
+Il comando richiede conferma scrivendo `yes` oppure `no`.
+
 ## Player MPV
 
 `aw-web` usa il browser come interfaccia e MPV come player video.
